@@ -21,4 +21,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
     }
   }
+
+  if (msg.action === 'openLinks') {
+    const urls = msg.urls || [];
+    urls.forEach(url => {
+      if (url) chrome.tabs.create({ url, active: false });
+    });
+    sendResponse({ ok: true });
+    return true;
+  }
 });

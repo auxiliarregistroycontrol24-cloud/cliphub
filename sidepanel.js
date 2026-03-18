@@ -1,5 +1,5 @@
 /* ===========================================================
-   QuickCopy — Side Panel (same logic, adapted for full height)
+   QuickCopy v3 — Side Panel with Quick Links
    =========================================================== */
 
 const COLORS = [
@@ -8,13 +8,23 @@ const COLORS = [
   '#14b8a6','#06b6d4','#3b82f6','#64748b'
 ];
 
-let state = { categories: [], snippets: [] };
+let state = {
+  categories: [],
+  snippets: [],
+  quickLinks: [
+    { name: '', url: '' },
+    { name: '', url: '' }
+  ]
+};
+
 let activeCat = 'all';
 let searchQuery = '';
 let editingId = null;
 let selectedColor = COLORS[0];
 let confirmCallback = null;
+let qlEditMode = false;
 
+/* ── Storage ──────────────────────────────────────────────── */
 const store = {
   async get () {
     return new Promise(resolve => {
@@ -35,24 +45,32 @@ const store = {
   }
 };
 
-// Listen for storage changes from popup
+// Sync in real-time
 if (typeof chrome !== 'undefined' && chrome.storage) {
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.qc) {
       state = changes.qc.newValue || state;
+      if (!state.quickLinks) {
+        state.quickLinks = [{ name: '', url: '' }, { name: '', url: '' }];
+      }
       render();
     }
   });
 }
 
+/* ── Init ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
   const saved = await store.get();
   if (saved) {
     state = saved;
+    if (!state.quickLinks) {
+      state.quickLinks = [{ name: '', url: '' }, { name: '', url: '' }];
+    }
   } else {
     state = {
       categories: [{ id: 'general', name: 'General', color: '#6366f1' }],
-      snippets: []
+      snippets: [],
+      quickLinks: [{ name: '', url: '' }, { name: '', url: '' }]
     };
     persist();
   }
@@ -69,8 +87,123 @@ function render () {
   renderCategories();
   renderSnippets();
   renderCategorySelect();
+  renderQuickLinks();
 }
 
+/* =======================================
+   QUICK LINKS
+   ======================================= */
+function renderQuickLinks () {
+  const link1 = state.quickLinks[0] || { name: '', url: '' };
+  const link2 = state.quickLinks[1] || { name: '', url: '' };
+
+  const row1 = $('qlRow1');
+  const row2 = $('qlRow2');
+
+  if (link1.url) {
+    row1.classList.add('has-url');
+    $('qlName1').textContent = link1.name || 'Enlace 1';
+    $('qlUrl1').textContent = truncateUrl(link1.url);
+  } else {
+    row1.classList.remove('has-url');
+    $('qlName1').textContent = 'Sin configurar';
+    $('qlUrl1').textContent = '';
+  }
+
+  if (link2.url) {
+    row2.classList.add('has-url');
+    $('qlName2').textContent = link2.name || 'Enlace 2';
+    $('qlUrl2').textContent = truncateUrl(link2.url);
+  } else {
+    row2.classList.remove('has-url');
+    $('qlName2').textContent = 'Sin configurar';
+    $('qlUrl2').textContent = '';
+  }
+}
+
+function truncateUrl (url) {
+  try {
+    const u = new URL(url);
+    let display = u.hostname + u.pathname;
+    if (display.length > 40) display = display.substring(0, 40) + '…';
+    return display;
+  } catch {
+    return url.length > 40 ? url.substring(0, 40) + '…' : url;
+  }
+}
+
+function openQuickLinksEdit () {
+  qlEditMode = true;
+  const link1 = state.quickLinks[0] || { name: '', url: '' };
+  const link2 = state.quickLinks[1] || { name: '', url: '' };
+
+  $('qlEditName1').value = link1.name || '';
+  $('qlEditUrl1').value = link1.url || '';
+  $('qlEditName2').value = link2.name || '';
+  $('qlEditUrl2').value = link2.url || '';
+
+  $('qlView').style.display = 'none';
+  $('qlEdit').style.display = 'flex';
+}
+
+function closeQuickLinksEdit () {
+  qlEditMode = false;
+  $('qlView').style.display = 'flex';
+  $('qlEdit').style.display = 'none';
+}
+
+function saveQuickLinks () {
+  state.quickLinks = [
+    {
+      name: $('qlEditName1').value.trim(),
+      url: normalizeUrl($('qlEditUrl1').value.trim())
+    },
+    {
+      name: $('qlEditName2').value.trim(),
+      url: normalizeUrl($('qlEditUrl2').value.trim())
+    }
+  ];
+  persist();
+  closeQuickLinksEdit();
+  renderQuickLinks();
+  toast('Enlaces guardados');
+}
+
+function normalizeUrl (url) {
+  if (!url) return '';
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  return url;
+}
+
+function openQuickLinks () {
+  const urls = state.quickLinks
+    .map(l => l.url)
+    .filter(u => u && u.length > 0);
+
+  if (urls.length === 0) {
+    toast('No hay enlaces configurados');
+    return;
+  }
+
+  if (typeof chrome !== 'undefined' && chrome.tabs) {
+    urls.forEach(url => {
+      chrome.tabs.create({ url, active: false });
+    });
+    toast(`${urls.length} enlace${urls.length > 1 ? 's' : ''} abierto${urls.length > 1 ? 's' : ''}`);
+  } else {
+    urls.forEach(url => window.open(url, '_blank'));
+    toast('Enlaces abiertos');
+  }
+}
+
+function toggleQuickLinksCollapse (e) {
+  if (e.target.closest('.quicklinks-header-actions')) return;
+  $('quicklinksSection').classList.toggle('collapsed');
+}
+
+/* =======================================
+   CATEGORIES
+   ======================================= */
 function renderCategories () {
   const el = $('categoriesList');
   el.innerHTML = '';
@@ -126,6 +259,9 @@ function renderCategorySelect () {
   });
 }
 
+/* =======================================
+   SNIPPETS
+   ======================================= */
 function renderSnippets () {
   const list = $('snippetsList');
   const empty = $('emptyState');
@@ -218,6 +354,7 @@ function makeRow (snippet) {
   return row;
 }
 
+/* ── Clipboard ──────────────────────────────────────────── */
 async function copyText (text, el) {
   try {
     await navigator.clipboard.writeText(text);
@@ -237,6 +374,7 @@ async function copyText (text, el) {
   toast('¡Copiado al portapapeles!');
 }
 
+/* ── CRUD Snippets ──────────────────────────────────────── */
 function addSnippet (title, text, catId) {
   state.snippets.unshift({ id: uid(), title, text, catId, ts: Date.now() });
   persist(); render();
@@ -253,6 +391,7 @@ function deleteSnippet (id) {
   persist(); render();
 }
 
+/* ── CRUD Categories ────────────────────────────────────── */
 function addCategory (name, color) {
   state.categories.push({ id: uid(), name, color });
   persist(); render();
@@ -266,6 +405,7 @@ function deleteCategory (id) {
   persist(); render();
 }
 
+/* ── Modals ─────────────────────────────────────────────── */
 function openAddModal () {
   editingId = null;
   $('modalTitle').textContent = 'Nuevo Snippet';
@@ -311,6 +451,7 @@ function saveSnippet () {
   toast(editingId ? 'Snippet actualizado' : 'Snippet guardado');
 }
 
+/* ── Category Form ──────────────────────────────────────── */
 function toggleCatForm () {
   const form = $('categoryForm');
   const open = form.classList.toggle('active');
@@ -349,6 +490,7 @@ function saveCategoryForm () {
   toast('Categoría creada');
 }
 
+/* ── Toast ──────────────────────────────────────────────── */
 let toastTimer;
 function toast (msg) {
   const el = $('toast');
@@ -358,20 +500,31 @@ function toast (msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
+/* ── Events ─────────────────────────────────────────────── */
 function bind () {
   $('btnAddSnippet').addEventListener('click', openAddModal);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
+  // Quick Links
+  $('quicklinksToggle').addEventListener('click', toggleQuickLinksCollapse);
+  $('btnEditLinks').addEventListener('click', e => { e.stopPropagation(); openQuickLinksEdit(); });
+  $('btnOpenLinks').addEventListener('click', e => { e.stopPropagation(); openQuickLinks(); });
+  $('qlSaveBtn').addEventListener('click', saveQuickLinks);
+  $('qlCancelBtn').addEventListener('click', closeQuickLinksEdit);
+
+  // Categories
   $('btnAddCategory').addEventListener('click', toggleCatForm);
   $('saveCatBtn').addEventListener('click', saveCategoryForm);
   $('cancelCatBtn').addEventListener('click', toggleCatForm);
   $('catNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveCategoryForm(); });
 
+  // Snippets
   $('saveSnippetBtn').addEventListener('click', saveSnippet);
   $('cancelSnippetBtn').addEventListener('click', closeModal);
   $('btnCloseModal').addEventListener('click', closeModal);
   $('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
+  // Confirm
   $('confirmOkBtn').addEventListener('click', () => { confirmCallback?.(); closeConfirm(); });
   $('confirmCancelBtn').addEventListener('click', closeConfirm);
   $('confirmOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
@@ -381,6 +534,7 @@ function bind () {
   });
 }
 
+/* ── Helpers ─────────────────────────────────────────────── */
 function $ (id) { return document.getElementById(id); }
 
 function rgbToHex (rgb) {
