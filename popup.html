@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>QuickCopy</title>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="logo">
+      <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+      </svg>
+      <span class="logo-text">QuickCopy</span>
+    </div>
+    <button id="btnAddSnippet" class="btn-header-action" title="Nuevo snippet">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- ========== SEARCH ========== -->
+  <div class="search-wrapper">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="searchInput" class="search-input" placeholder="Buscar snippets...">
+  </div>
+
+  <!-- ========== CATEGORIES ========== -->
+  <div class="categories-bar">
+    <div class="categories-scroll" id="categoriesList"></div>
+    <button id="btnAddCategory" class="btn-add-cat" title="Nueva categoría">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ========== CATEGORY FORM ========== -->
+  <div class="category-form" id="categoryForm">
+    <div class="category-form-inner">
+      <input type="text" id="catNameInput" class="cat-name-input"
+        placeholder="Nombre de la categoría" maxlength="30">
+      <div class="color-picker" id="colorPicker"></div>
+      <div class="category-form-actions">
+        <button id="cancelCatBtn" class="btn btn-ghost btn-sm">Cancelar</button>
+        <button id="saveCatBtn" class="btn btn-primary btn-sm">Añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SNIPPETS LIST ========== -->
+  <div class="snippets-scroll">
+    <div class="snippets-list" id="snippetsList"></div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <p class="empty-title">No hay snippets</p>
+      <p class="empty-desc">Pulsa <strong>+</strong> para guardar tu primer texto</p>
+    </div>
+  </div>
+
+  <!-- ========== SNIPPET MODAL ========== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Nuevo Snippet</h2>
+        <button id="btnCloseModal" class="btn-close" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="snippetTitleInput">Título</label>
+          <input type="text" id="snippetTitleInput" placeholder="Ej: Saludo formal" maxlength="80">
+        </div>
+        <div class="form-group">
+          <label for="snippetTextInput">Texto a copiar</label>
+          <textarea id="snippetTextInput" rows="5"
+            placeholder="Escribe o pega aquí el texto que quieras guardar..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="snippetCategorySelect">Categoría</label>
+          <div class="select-wrapper">
+            <select id="snippetCategorySelect"></select>
+            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelSnippetBtn" class="btn btn-ghost">Cancelar</button>
+        <button id="saveSnippetBtn" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CONFIRM MODAL ========== -->
+  <div class="modal-overlay" id="confirmOverlay">
+    <div class="modal modal-sm">
+      <div class="modal-body" style="padding-top:24px">
+        <p class="confirm-text" id="confirmText"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmCancelBtn" class="btn btn-ghost">Cancelar</button>
+        <button id="confirmOkBtn" class="btn btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+  <div class="toast" id="toast">
+    <svg class="toast-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span id="toastMsg">¡Copiado!</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
