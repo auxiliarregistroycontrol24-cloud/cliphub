@@ -1,5 +1,5 @@
 /* ===========================================================
-   QuickCopy — Compact Popup
+   QuickCopy — Side Panel (same logic, adapted for full height)
    =========================================================== */
 
 const COLORS = [
@@ -15,7 +15,6 @@ let editingId = null;
 let selectedColor = COLORS[0];
 let confirmCallback = null;
 
-// ── Storage ────────────────────────────────────────────────
 const store = {
   async get () {
     return new Promise(resolve => {
@@ -36,7 +35,16 @@ const store = {
   }
 };
 
-// ── Init ───────────────────────────────────────────────────
+// Listen for storage changes from popup
+if (typeof chrome !== 'undefined' && chrome.storage) {
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.qc) {
+      state = changes.qc.newValue || state;
+      render();
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const saved = await store.get();
   if (saved) {
@@ -57,20 +65,16 @@ function persist () { store.set(state); }
 function uid () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
 function esc (t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-// ── Render ─────────────────────────────────────────────────
 function render () {
   renderCategories();
   renderSnippets();
   renderCategorySelect();
 }
 
-// ── Categories ─────────────────────────────────────────────
 function renderCategories () {
   const el = $('categoriesList');
   el.innerHTML = '';
-
   el.appendChild(makePill('all', 'Todos', null, state.snippets.length, activeCat === 'all'));
-
   state.categories.forEach(c => {
     const count = state.snippets.filter(s => s.catId === c.id).length;
     el.appendChild(makePill(c.id, c.name, c.color, count, activeCat === c.id));
@@ -122,7 +126,6 @@ function renderCategorySelect () {
   });
 }
 
-// ── Snippets (COMPACT ROWS) ───────────────────────────────
 function renderSnippets () {
   const list = $('snippetsList');
   const empty = $('emptyState');
@@ -153,7 +156,6 @@ function renderSnippets () {
 
   empty.classList.remove('visible');
   list.style.display = 'flex';
-
   items.forEach(s => list.appendChild(makeRow(s)));
 }
 
@@ -166,7 +168,6 @@ function makeRow (snippet) {
   row.dataset.sid = snippet.id;
 
   row.innerHTML = `
-    <div class="snippet-row-bar" style="display:none"></div>
     <span class="row-title">${esc(snippet.title)}</span>
     <span class="row-cat" style="background:${col}14;color:${col};border:1px solid ${col}30">${esc(cat?.name || 'General')}</span>
     <div class="row-actions">
@@ -193,28 +194,20 @@ function makeRow (snippet) {
     </svg>
   `;
 
-  // Color bar via pseudo-element workaround
-  row.style.setProperty('--bar-color', col);
-  row.querySelector('.snippet-row-bar')?.remove();
-
-  // Inject color style for ::before
   const style = document.createElement('style');
   style.textContent = `.snippet-row[data-sid="${snippet.id}"]::before{background:${col}}`;
   row.appendChild(style);
 
-  // Click → copy
   row.addEventListener('click', e => {
     if (e.target.closest('.btn-icon')) return;
     copyText(snippet.text, row);
   });
 
-  // Edit
   row.querySelector('.btn-edit').addEventListener('click', e => {
     e.stopPropagation();
     openEditModal(snippet);
   });
 
-  // Delete
   row.querySelector('.btn-del').addEventListener('click', e => {
     e.stopPropagation();
     confirmAction(`¿Eliminar <strong>${esc(snippet.title)}</strong>?`, () => {
@@ -225,7 +218,6 @@ function makeRow (snippet) {
   return row;
 }
 
-// ── Clipboard ──────────────────────────────────────────────
 async function copyText (text, el) {
   try {
     await navigator.clipboard.writeText(text);
@@ -245,7 +237,6 @@ async function copyText (text, el) {
   toast('¡Copiado al portapapeles!');
 }
 
-// ── CRUD Snippets ──────────────────────────────────────────
 function addSnippet (title, text, catId) {
   state.snippets.unshift({ id: uid(), title, text, catId, ts: Date.now() });
   persist(); render();
@@ -262,7 +253,6 @@ function deleteSnippet (id) {
   persist(); render();
 }
 
-// ── CRUD Categories ────────────────────────────────────────
 function addCategory (name, color) {
   state.categories.push({ id: uid(), name, color });
   persist(); render();
@@ -276,7 +266,6 @@ function deleteCategory (id) {
   persist(); render();
 }
 
-// ── Modals ─────────────────────────────────────────────────
 function openAddModal () {
   editingId = null;
   $('modalTitle').textContent = 'Nuevo Snippet';
@@ -322,7 +311,6 @@ function saveSnippet () {
   toast(editingId ? 'Snippet actualizado' : 'Snippet guardado');
 }
 
-// ── Category Form ──────────────────────────────────────────
 function toggleCatForm () {
   const form = $('categoryForm');
   const open = form.classList.toggle('active');
@@ -361,7 +349,6 @@ function saveCategoryForm () {
   toast('Categoría creada');
 }
 
-// ── Toast ──────────────────────────────────────────────────
 let toastTimer;
 function toast (msg) {
   const el = $('toast');
@@ -371,26 +358,8 @@ function toast (msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
-// ── Side Panel ─────────────────────────────────────────────
-function openSidePanel () {
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0] && chrome.sidePanel) {
-        chrome.sidePanel.open({ tabId: tabs[0].id }).catch(() => {
-          toast('No se pudo abrir el Side Panel');
-        });
-        window.close();
-      } else {
-        toast('Side Panel no disponible');
-      }
-    });
-  }
-}
-
-// ── Events ─────────────────────────────────────────────────
 function bind () {
   $('btnAddSnippet').addEventListener('click', openAddModal);
-  $('btnOpenSidePanel').addEventListener('click', openSidePanel);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
   $('btnAddCategory').addEventListener('click', toggleCatForm);
@@ -412,7 +381,6 @@ function bind () {
   });
 }
 
-// ── Helpers ────────────────────────────────────────────────
 function $ (id) { return document.getElementById(id); }
 
 function rgbToHex (rgb) {

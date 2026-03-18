@@ -2,10 +2,20 @@
   "manifest_version": 3,
   "name": "QuickCopy - Clipboard Snippets",
   "description": "Guarda y copia textos rápidamente al portapapeles con un clic",
-  "version": "1.0.0",
-  "permissions": ["storage", "clipboardWrite"],
+  "version": "2.0.0",
+  "permissions": [
+    "storage",
+    "clipboardWrite",
+    "sidePanel"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "QuickCopy"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }
