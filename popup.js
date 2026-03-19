@@ -299,7 +299,6 @@ function makeRow (snippet) {
 
   row.innerHTML = `
     <span class="row-title">${esc(snippet.title)}</span>
-    <span class="row-cat" style="background:${col}14;color:${col};border:1px solid ${col}30">${esc(cat?.name || 'General')}</span>
     <div class="row-actions">
       <button class="btn-icon btn-edit" title="Editar">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
