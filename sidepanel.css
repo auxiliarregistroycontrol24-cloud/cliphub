@@ -361,11 +361,11 @@ body {
 }
 
 /* =======================================
-   CATEGORIES BAR
+   CATEGORIES BAR — WRAP (no scroll)
    ======================================= */
 .categories-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 4px 14px 8px;
   gap: 5px;
   flex-shrink: 0;
@@ -373,13 +373,10 @@ body {
 
 .categories-scroll {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  overflow-x: auto;
   flex: 1;
-  scrollbar-width: none;
 }
-
-.categories-scroll::-webkit-scrollbar{display:none}
 
 .cat-pill {
   display: inline-flex;
@@ -395,7 +392,6 @@ body {
   cursor: pointer;
   white-space: nowrap;
   transition: var(--transition);
-  flex-shrink: 0;
 }
 
 .cat-pill:hover{border-color:var(--text-tertiary)}
@@ -451,6 +447,7 @@ body {
   justify-content: center;
   flex-shrink: 0;
   transition: var(--transition);
+  margin-top: 2px;
 }
 
 .btn-add-cat:hover {
