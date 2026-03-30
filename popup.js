@@ -186,12 +186,6 @@ function openQuickLinks () {
   }
 }
 
-function toggleQuickLinksCollapse (e) {
-  // Don't toggle if clicking on buttons
-  if (e.target.closest('.quicklinks-header-actions')) return;
-  $('quicklinksSection').classList.toggle('collapsed');
-}
-
 /* =======================================
    CATEGORIES
    ======================================= */
@@ -510,13 +504,37 @@ function openSidePanel () {
 }
 
 /* ── Events ─────────────────────────────────────────────── */
+function bindTabs () {
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', e => {
+      const tabId = e.target.dataset.tab;
+      
+      // Remover active de todos los botones y panes
+      buttons.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      
+      // Agregar active al botón y pane clickeado
+      e.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      
+      // Si es tabSnippets, enfocar el searchInput
+      if (tabId === 'tabSnippets') {
+        setTimeout(() => $('searchInput').focus(), 100);
+      }
+    });
+  });
+}
+
 function bind () {
   $('btnAddSnippet').addEventListener('click', openAddModal);
   $('btnOpenSidePanel').addEventListener('click', openSidePanel);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
+  // Tabs
+  bindTabs();
+
   // Quick Links
-  $('quicklinksToggle').addEventListener('click', toggleQuickLinksCollapse);
   $('btnEditLinks').addEventListener('click', e => { e.stopPropagation(); openQuickLinksEdit(); });
   $('btnOpenLinks').addEventListener('click', e => { e.stopPropagation(); openQuickLinks(); });
   $('qlSaveBtn').addEventListener('click', saveQuickLinks);

@@ -28,8 +28,63 @@
     </button>
   </header>
 
-  <!-- QUICK LINKS SECTION -->
-  <div class="quicklinks-section" id="quicklinksSection">
+  <!-- TABS NAVIGATION -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" data-tab="tabSnippets">Snippets</button>
+    <button class="tab-btn" data-tab="tabQuickLinks">Enlaces Rápidos</button>
+  </div>
+
+  <!-- TAB: SNIPPETS -->
+  <div id="tabSnippets" class="tab-pane active">
+    <!-- SEARCH -->
+    <div class="search-wrapper">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar snippets...">
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="categories-bar">
+      <div class="categories-scroll" id="categoriesList"></div>
+      <button id="btnAddCategory" class="btn-add-cat" title="Nueva categoría">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- CATEGORY FORM -->
+    <div class="category-form" id="categoryForm">
+      <div class="category-form-inner">
+        <input type="text" id="catNameInput" class="cat-name-input"
+          placeholder="Nombre de la categoría" maxlength="30">
+        <div class="color-picker" id="colorPicker"></div>
+        <div class="category-form-actions">
+          <button id="cancelCatBtn" class="btn btn-ghost btn-sm">Cancelar</button>
+          <button id="saveCatBtn" class="btn btn-primary btn-sm">Añadir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPETS LIST -->
+    <div class="snippets-scroll">
+      <div class="snippets-list" id="snippetsList"></div>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <p class="empty-title">No hay snippets</p>
+        <p class="empty-desc">Pulsa <strong>+</strong> para guardar tu primer texto</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: QUICK LINKS -->
+  <div id="tabQuickLinks" class="tab-pane">
+    <div class="quicklinks-section" id="quicklinksSection">
     <div class="quicklinks-header" id="quicklinksToggle">
       <div class="quicklinks-label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -38,10 +93,6 @@
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
         <span>Enlaces Rápidos</span>
-        <svg class="quicklinks-chevron" id="qlChevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
       </div>
       <div class="quicklinks-header-actions">
         <button id="btnEditLinks" class="btn-ql-action" title="Editar enlaces">
@@ -92,51 +143,6 @@
           <button id="qlSaveBtn" class="btn btn-primary btn-sm">Guardar</button>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- SEARCH -->
-  <div class="search-wrapper">
-    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-    <input type="text" id="searchInput" class="search-input" placeholder="Buscar snippets...">
-  </div>
-
-  <!-- CATEGORIES -->
-  <div class="categories-bar">
-    <div class="categories-scroll" id="categoriesList"></div>
-    <button id="btnAddCategory" class="btn-add-cat" title="Nueva categoría">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- CATEGORY FORM -->
-  <div class="category-form" id="categoryForm">
-    <div class="category-form-inner">
-      <input type="text" id="catNameInput" class="cat-name-input"
-        placeholder="Nombre de la categoría" maxlength="30">
-      <div class="color-picker" id="colorPicker"></div>
-      <div class="category-form-actions">
-        <button id="cancelCatBtn" class="btn btn-ghost btn-sm">Cancelar</button>
-        <button id="saveCatBtn" class="btn btn-primary btn-sm">Añadir</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SNIPPETS LIST -->
-  <div class="snippets-scroll">
-    <div class="snippets-list" id="snippetsList"></div>
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📋</div>
-      <p class="empty-title">No hay snippets</p>
-      <p class="empty-desc">Pulsa <strong>+</strong> para guardar tu primer texto</p>
     </div>
   </div>
 
