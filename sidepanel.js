@@ -1,5 +1,5 @@
 /* ===========================================================
-   QuickCopy v3 — Side Panel with Quick Links
+   QuickCopy v3.1 — Popup & SidePanel with Automate Logic
    =========================================================== */
 
 const COLORS = [
@@ -202,6 +202,80 @@ function toggleQuickLinksCollapse (e) {
 }
 
 /* =======================================
+   AUTOMATIZACIÓN (BATCH CLICK)
+   ======================================= */
+function initAutomate() {
+  $('automateToggle').addEventListener('click', () => {
+    $('automateSection').classList.toggle('collapsed');
+  });
+  
+  $('btnStartAuto').addEventListener('click', async () => {
+      const text = $('autoText').value.trim();
+      const selector = $('autoSelector').value.trim();
+      const batchSize = parseInt($('autoBatchSize').value) || 15;
+      const autoStatus = $('autoStatus');
+
+      if (!text || !selector) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Completa todos los campos.</span>";
+          return;
+      }
+
+      if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ No hay pestaña activa.</span>";
+          return;
+      }
+
+      autoStatus.innerText = "⏳ Buscando elementos...";
+      
+      try {
+          chrome.tabs.sendMessage(tab.id, {
+              action: "RUN_BATCH_CLICK",
+              text,
+              selector,
+              batchSize
+          }, (response) => {
+             if (chrome.runtime.lastError) {
+                autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
+             }
+          });
+      } catch (e) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
+      }
+  });
+
+  $('btnResetAuto').addEventListener('click', async () => {
+      if (typeof chrome === 'undefined' || !chrome.tabs) return;
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) return;
+      
+      const autoStatus = $('autoStatus');
+      try {
+          chrome.tabs.sendMessage(tab.id, { action: "RESET_BATCH" }, () => {
+             if (chrome.runtime.lastError) {
+                autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
+             } else {
+                autoStatus.innerText = "🔄 Progreso reiniciado.";
+             }
+          });
+      } catch (e) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error al reiniciar.</span>";
+      }
+  });
+
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.onMessage.addListener((request) => {
+          if (request.action === "BATCH_PROGRESS") {
+              const { total, processed } = request;
+              $('autoStatus').innerText = `✅ Encontrados: ${total} | Procesados: ${processed}`;
+          }
+      });
+  }
+}
+
+/* =======================================
    CATEGORIES
    ======================================= */
 function renderCategories () {
@@ -307,23 +381,19 @@ function makeRow (snippet) {
     <span class="row-title">${esc(snippet.title)}</span>
     <div class="row-actions">
       <button class="btn-icon btn-edit" title="Editar">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
       </button>
       <button class="btn-icon btn-icon-danger btn-del" title="Eliminar">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4
-            a2 2 0 0 1 2 2v2"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4 a2 2 0 0 1 2 2v2"/>
         </svg>
       </button>
     </div>
-    <svg class="row-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="row-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
     </svg>
@@ -489,6 +559,22 @@ function saveCategoryForm () {
   toast('Categoría creada');
 }
 
+/* ── Side Panel (Solo para el popup) ────────────────────── */
+function openSidePanel () {
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0] && chrome.sidePanel) {
+        chrome.sidePanel.open({ tabId: tabs[0].id }).catch(() => {
+          toast('No se pudo abrir el Side Panel');
+        });
+        window.close();
+      } else {
+        toast('Side Panel no disponible');
+      }
+    });
+  }
+}
+
 /* ── Toast ──────────────────────────────────────────────── */
 let toastTimer;
 function toast (msg) {
@@ -502,6 +588,7 @@ function toast (msg) {
 /* ── Events ─────────────────────────────────────────────── */
 function bind () {
   $('btnAddSnippet').addEventListener('click', openAddModal);
+  if ($('btnOpenSidePanel')) $('btnOpenSidePanel').addEventListener('click', openSidePanel);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
   // Quick Links
@@ -531,6 +618,9 @@ function bind () {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal(); closeConfirm(); }
   });
+
+  // Automate UI logic
+  initAutomate();
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */

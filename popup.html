@@ -11,8 +11,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="logo">
-      <svg class="logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
         <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
       </svg>
@@ -20,15 +19,13 @@
     </div>
     <div class="header-actions">
       <button id="btnOpenSidePanel" class="btn-header-action" title="Abrir en Side Panel">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
           <line x1="15" y1="3" x2="15" y2="21"/>
         </svg>
       </button>
       <button id="btnAddSnippet" class="btn-header-action" title="Nuevo snippet">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
@@ -40,28 +37,24 @@
   <div class="quicklinks-section" id="quicklinksSection">
     <div class="quicklinks-header" id="quicklinksToggle">
       <div class="quicklinks-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
         <span>Enlaces Rápidos</span>
-        <svg class="quicklinks-chevron" id="qlChevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="quicklinks-chevron" id="qlChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </div>
       <div class="quicklinks-header-actions">
         <button id="btnEditLinks" class="btn-ql-action" title="Editar enlaces">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
         </button>
         <button id="btnOpenLinks" class="btn-open-links" title="Abrir ambos enlaces">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
             <polyline points="15 3 21 3 21 9"/>
             <line x1="10" y1="14" x2="21" y2="3"/>
@@ -72,7 +65,6 @@
     </div>
 
     <div class="quicklinks-body" id="quicklinksBody">
-      <!-- VIEW MODE -->
       <div class="ql-view" id="qlView">
         <div class="ql-link-row" id="qlRow1">
           <div class="ql-link-dot"></div>
@@ -85,8 +77,6 @@
           <span class="ql-link-url" id="qlUrl2"></span>
         </div>
       </div>
-
-      <!-- EDIT MODE -->
       <div class="ql-edit" id="qlEdit" style="display:none">
         <div class="ql-edit-group">
           <span class="ql-edit-label">Enlace 1</span>
@@ -106,10 +96,45 @@
     </div>
   </div>
 
+  <!-- AUTOMATE SECTION -->
+  <div class="quicklinks-section collapsed" id="automateSection">
+    <div class="quicklinks-header" id="automateToggle">
+      <div class="quicklinks-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span>Automatizar Lote</span>
+        <svg class="quicklinks-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    </div>
+    <div class="quicklinks-body" id="automateBody">
+        <div class="ql-edit-group">
+          <span class="ql-edit-label">Buscar Texto</span>
+          <input type="text" id="autoText" class="ql-input" placeholder="Ej: SOLICITUD DE HOMOLOGACIÓN">
+        </div>
+        <div class="ql-edit-group" style="margin-top:8px;">
+          <span class="ql-edit-label">Selector</span>
+          <input type="text" id="autoSelector" class="ql-input" placeholder="Ej: a, button, .clase">
+        </div>
+        <div class="ql-edit-group" style="margin-top:8px;">
+          <span class="ql-edit-label">Tamaño del Lote</span>
+          <input type="number" id="autoBatchSize" class="ql-input" value="15" min="1">
+        </div>
+        <div class="ql-edit-actions" style="margin-top:10px; justify-content: space-between;">
+          <button id="btnResetAuto" class="btn btn-ghost btn-sm" style="color: var(--danger)">⏹ Reiniciar</button>
+          <button id="btnStartAuto" class="btn btn-primary btn-sm">▶ Ejecutar Lote</button>
+        </div>
+        <div id="autoStatus" style="margin-top: 10px; padding: 8px; font-size: 11px; background: var(--bg); border-radius: var(--radius-sm); text-align: center; color: var(--text-secondary); border: 1px solid var(--border);">
+          Esperando configuración...
+        </div>
+    </div>
+  </div>
+
   <!-- SEARCH -->
   <div class="search-wrapper">
-    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="8"/>
       <line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </svg>
@@ -120,8 +145,7 @@
   <div class="categories-bar">
     <div class="categories-scroll" id="categoriesList"></div>
     <button id="btnAddCategory" class="btn-add-cat" title="Nueva categoría">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
@@ -131,8 +155,7 @@
   <!-- CATEGORY FORM -->
   <div class="category-form" id="categoryForm">
     <div class="category-form-inner">
-      <input type="text" id="catNameInput" class="cat-name-input"
-        placeholder="Nombre de la categoría" maxlength="30">
+      <input type="text" id="catNameInput" class="cat-name-input" placeholder="Nombre de la categoría" maxlength="30">
       <div class="color-picker" id="colorPicker"></div>
       <div class="category-form-actions">
         <button id="cancelCatBtn" class="btn btn-ghost btn-sm">Cancelar</button>
@@ -165,15 +188,13 @@
         </div>
         <div class="form-group">
           <label for="snippetTextInput">Texto a copiar</label>
-          <textarea id="snippetTextInput" rows="4"
-            placeholder="Escribe o pega aquí el texto..."></textarea>
+          <textarea id="snippetTextInput" rows="4" placeholder="Escribe o pega aquí el texto..."></textarea>
         </div>
         <div class="form-group">
           <label for="snippetCategorySelect">Categoría</label>
           <div class="select-wrapper">
             <select id="snippetCategorySelect"></select>
-            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </div>
@@ -182,8 +203,7 @@
       <div class="modal-footer">
         <button id="cancelSnippetBtn" class="btn btn-ghost">Cancelar</button>
         <button id="saveSnippetBtn" class="btn btn-primary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
           Guardar
@@ -207,8 +227,7 @@
 
   <!-- TOAST -->
   <div class="toast" id="toast">
-    <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="20 6 9 17 4 12"/>
     </svg>
     <span id="toastMsg">¡Copiado!</span>

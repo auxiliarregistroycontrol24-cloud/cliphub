@@ -1,5 +1,5 @@
 /* ===========================================================
-   QuickCopy v3 — Popup with Quick Links
+   QuickCopy v3.1 — Popup & SidePanel with Automate Logic
    =========================================================== */
 
 const COLORS = [
@@ -45,6 +45,19 @@ const store = {
   }
 };
 
+// Sync in real-time
+if (typeof chrome !== 'undefined' && chrome.storage) {
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.qc) {
+      state = changes.qc.newValue || state;
+      if (!state.quickLinks) {
+        state.quickLinks = [{ name: '', url: '' }, { name: '', url: '' }];
+      }
+      render();
+    }
+  });
+}
+
 /* ── Init ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
   const saved = await store.get();
@@ -70,7 +83,6 @@ function persist () { store.set(state); }
 function uid () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
 function esc (t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-/* ── Full Render ──────────────────────────────────────────── */
 function render () {
   renderCategories();
   renderSnippets();
@@ -88,7 +100,6 @@ function renderQuickLinks () {
   const row1 = $('qlRow1');
   const row2 = $('qlRow2');
 
-  // Row 1
   if (link1.url) {
     row1.classList.add('has-url');
     $('qlName1').textContent = link1.name || 'Enlace 1';
@@ -99,7 +110,6 @@ function renderQuickLinks () {
     $('qlUrl1').textContent = '';
   }
 
-  // Row 2
   if (link2.url) {
     row2.classList.add('has-url');
     $('qlName2').textContent = link2.name || 'Enlace 2';
@@ -115,10 +125,10 @@ function truncateUrl (url) {
   try {
     const u = new URL(url);
     let display = u.hostname + u.pathname;
-    if (display.length > 35) display = display.substring(0, 35) + '…';
+    if (display.length > 40) display = display.substring(0, 40) + '…';
     return display;
   } catch {
-    return url.length > 35 ? url.substring(0, 35) + '…' : url;
+    return url.length > 40 ? url.substring(0, 40) + '…' : url;
   }
 }
 
@@ -187,9 +197,82 @@ function openQuickLinks () {
 }
 
 function toggleQuickLinksCollapse (e) {
-  // Don't toggle if clicking on buttons
   if (e.target.closest('.quicklinks-header-actions')) return;
   $('quicklinksSection').classList.toggle('collapsed');
+}
+
+/* =======================================
+   AUTOMATIZACIÓN (BATCH CLICK)
+   ======================================= */
+function initAutomate() {
+  $('automateToggle').addEventListener('click', () => {
+    $('automateSection').classList.toggle('collapsed');
+  });
+  
+  $('btnStartAuto').addEventListener('click', async () => {
+      const text = $('autoText').value.trim();
+      const selector = $('autoSelector').value.trim();
+      const batchSize = parseInt($('autoBatchSize').value) || 15;
+      const autoStatus = $('autoStatus');
+
+      if (!text || !selector) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Completa todos los campos.</span>";
+          return;
+      }
+
+      if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ No hay pestaña activa.</span>";
+          return;
+      }
+
+      autoStatus.innerText = "⏳ Buscando elementos...";
+      
+      try {
+          chrome.tabs.sendMessage(tab.id, {
+              action: "RUN_BATCH_CLICK",
+              text,
+              selector,
+              batchSize
+          }, (response) => {
+             if (chrome.runtime.lastError) {
+                autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
+             }
+          });
+      } catch (e) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
+      }
+  });
+
+  $('btnResetAuto').addEventListener('click', async () => {
+      if (typeof chrome === 'undefined' || !chrome.tabs) return;
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) return;
+      
+      const autoStatus = $('autoStatus');
+      try {
+          chrome.tabs.sendMessage(tab.id, { action: "RESET_BATCH" }, () => {
+             if (chrome.runtime.lastError) {
+                autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
+             } else {
+                autoStatus.innerText = "🔄 Progreso reiniciado.";
+             }
+          });
+      } catch (e) {
+          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error al reiniciar.</span>";
+      }
+  });
+
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.onMessage.addListener((request) => {
+          if (request.action === "BATCH_PROGRESS") {
+              const { total, processed } = request;
+              $('autoStatus').innerText = `✅ Encontrados: ${total} | Procesados: ${processed}`;
+          }
+      });
+  }
 }
 
 /* =======================================
@@ -198,9 +281,7 @@ function toggleQuickLinksCollapse (e) {
 function renderCategories () {
   const el = $('categoriesList');
   el.innerHTML = '';
-
   el.appendChild(makePill('all', 'Todos', null, state.snippets.length, activeCat === 'all'));
-
   state.categories.forEach(c => {
     const count = state.snippets.filter(s => s.catId === c.id).length;
     el.appendChild(makePill(c.id, c.name, c.color, count, activeCat === c.id));
@@ -253,7 +334,7 @@ function renderCategorySelect () {
 }
 
 /* =======================================
-   SNIPPETS (COMPACT)
+   SNIPPETS
    ======================================= */
 function renderSnippets () {
   const list = $('snippetsList');
@@ -285,7 +366,6 @@ function renderSnippets () {
 
   empty.classList.remove('visible');
   list.style.display = 'flex';
-
   items.forEach(s => list.appendChild(makeRow(s)));
 }
 
@@ -301,23 +381,19 @@ function makeRow (snippet) {
     <span class="row-title">${esc(snippet.title)}</span>
     <div class="row-actions">
       <button class="btn-icon btn-edit" title="Editar">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
       </button>
       <button class="btn-icon btn-icon-danger btn-del" title="Eliminar">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4
-            a2 2 0 0 1 2 2v2"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4 a2 2 0 0 1 2 2v2"/>
         </svg>
       </button>
     </div>
-    <svg class="row-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="row-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
     </svg>
@@ -483,17 +559,7 @@ function saveCategoryForm () {
   toast('Categoría creada');
 }
 
-/* ── Toast ──────────────────────────────────────────────── */
-let toastTimer;
-function toast (msg) {
-  const el = $('toast');
-  $('toastMsg').textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-/* ── Side Panel ─────────────────────────────────────────── */
+/* ── Side Panel (Solo para el popup) ────────────────────── */
 function openSidePanel () {
   if (typeof chrome !== 'undefined' && chrome.runtime) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -509,10 +575,20 @@ function openSidePanel () {
   }
 }
 
+/* ── Toast ──────────────────────────────────────────────── */
+let toastTimer;
+function toast (msg) {
+  const el = $('toast');
+  $('toastMsg').textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
 /* ── Events ─────────────────────────────────────────────── */
 function bind () {
   $('btnAddSnippet').addEventListener('click', openAddModal);
-  $('btnOpenSidePanel').addEventListener('click', openSidePanel);
+  if ($('btnOpenSidePanel')) $('btnOpenSidePanel').addEventListener('click', openSidePanel);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
   // Quick Links
@@ -542,6 +618,9 @@ function bind () {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal(); closeConfirm(); }
   });
+
+  // Automate UI logic
+  initAutomate();
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */
