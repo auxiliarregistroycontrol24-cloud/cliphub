@@ -1,5 +1,5 @@
 /* ===========================================================
-   QuickCopy v3 — Side Panel with Quick Links
+   QuickCopy v3 — Popup with Quick Links
    =========================================================== */
 
 const COLORS = [
@@ -23,6 +23,7 @@ let editingId = null;
 let selectedColor = COLORS[0];
 let confirmCallback = null;
 let qlEditMode = false;
+let modalSelectedCat = null;
 
 /* ── Storage ──────────────────────────────────────────────── */
 const store = {
@@ -44,19 +45,6 @@ const store = {
     }
   }
 };
-
-// Sync in real-time
-if (typeof chrome !== 'undefined' && chrome.storage) {
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.qc) {
-      state = changes.qc.newValue || state;
-      if (!state.quickLinks) {
-        state.quickLinks = [{ name: '', url: '' }, { name: '', url: '' }];
-      }
-      render();
-    }
-  });
-}
 
 /* ── Init ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -83,6 +71,7 @@ function persist () { store.set(state); }
 function uid () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
 function esc (t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
+/* ── Full Render ──────────────────────────────────────────── */
 function render () {
   renderCategories();
   renderSnippets();
@@ -100,6 +89,7 @@ function renderQuickLinks () {
   const row1 = $('qlRow1');
   const row2 = $('qlRow2');
 
+  // Row 1
   if (link1.url) {
     row1.classList.add('has-url');
     $('qlName1').textContent = link1.name || 'Enlace 1';
@@ -110,6 +100,7 @@ function renderQuickLinks () {
     $('qlUrl1').textContent = '';
   }
 
+  // Row 2
   if (link2.url) {
     row2.classList.add('has-url');
     $('qlName2').textContent = link2.name || 'Enlace 2';
@@ -125,10 +116,10 @@ function truncateUrl (url) {
   try {
     const u = new URL(url);
     let display = u.hostname + u.pathname;
-    if (display.length > 40) display = display.substring(0, 40) + '…';
+    if (display.length > 35) display = display.substring(0, 35) + '…';
     return display;
   } catch {
-    return url.length > 40 ? url.substring(0, 40) + '…' : url;
+    return url.length > 35 ? url.substring(0, 35) + '…' : url;
   }
 }
 
@@ -202,7 +193,9 @@ function openQuickLinks () {
 function renderCategories () {
   const el = $('categoriesList');
   el.innerHTML = '';
+
   el.appendChild(makePill('all', 'Todos', null, state.snippets.length, activeCat === 'all'));
+
   state.categories.forEach(c => {
     const count = state.snippets.filter(s => s.catId === c.id).length;
     el.appendChild(makePill(c.id, c.name, c.color, count, activeCat === c.id));
@@ -244,18 +237,32 @@ function makePill (id, name, color, count, active) {
 }
 
 function renderCategorySelect () {
-  const sel = $('snippetCategorySelect');
-  sel.innerHTML = '';
+  const container = $('modalCategoryTabs');
+  if (!container) return;
+  
+  container.innerHTML = '';
   state.categories.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c.id;
-    o.textContent = c.name;
-    sel.appendChild(o);
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab-btn';
+    btn.textContent = c.name;
+    btn.dataset.catId = c.id;
+    
+    if (modalSelectedCat === c.id || (!modalSelectedCat && c.id === (state.categories[0]?.id || 'general'))) {
+      btn.classList.add('active');
+    }
+    
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.cat-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      modalSelectedCat = c.id;
+    });
+    
+    container.appendChild(btn);
   });
 }
 
 /* =======================================
-   SNIPPETS
+   SNIPPETS (COMPACT)
    ======================================= */
 function renderSnippets () {
   const list = $('snippetsList');
@@ -287,6 +294,7 @@ function renderSnippets () {
 
   empty.classList.remove('visible');
   list.style.display = 'flex';
+
   items.forEach(s => list.appendChild(makeRow(s)));
 }
 
@@ -405,8 +413,8 @@ function openAddModal () {
   $('modalTitle').textContent = 'Nuevo Snippet';
   $('snippetTitleInput').value = '';
   $('snippetTextInput').value = '';
+  modalSelectedCat = state.categories[0]?.id || 'general';
   renderCategorySelect();
-  $('snippetCategorySelect').value = state.categories[0]?.id || 'general';
   $('modalOverlay').classList.add('active');
   setTimeout(() => $('snippetTitleInput').focus(), 100);
 }
@@ -416,8 +424,8 @@ function openEditModal (snippet) {
   $('modalTitle').textContent = 'Editar Snippet';
   $('snippetTitleInput').value = snippet.title;
   $('snippetTextInput').value = snippet.text;
+  modalSelectedCat = snippet.catId;
   renderCategorySelect();
-  $('snippetCategorySelect').value = snippet.catId;
   $('modalOverlay').classList.add('active');
   setTimeout(() => $('snippetTitleInput').focus(), 100);
 }
@@ -434,7 +442,7 @@ function confirmAction (msg, cb) {
 function saveSnippet () {
   const title = $('snippetTitleInput').value.trim();
   const text = $('snippetTextInput').value.trim();
-  const catId = $('snippetCategorySelect').value;
+  const catId = modalSelectedCat || state.categories[0]?.id || 'general';
 
   if (!title || !text) { toast('Completa título y texto'); return; }
 
@@ -494,6 +502,22 @@ function toast (msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
+/* ── Side Panel ─────────────────────────────────────────── */
+function openSidePanel () {
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0] && chrome.sidePanel) {
+        chrome.sidePanel.open({ tabId: tabs[0].id }).catch(() => {
+          toast('No se pudo abrir el Side Panel');
+        });
+        window.close();
+      } else {
+        toast('Side Panel no disponible');
+      }
+    });
+  }
+}
+
 /* ── Events ─────────────────────────────────────────────── */
 function bindTabs () {
   const buttons = document.querySelectorAll('.tab-btn');
@@ -519,6 +543,7 @@ function bindTabs () {
 
 function bind () {
   $('btnAddSnippet').addEventListener('click', openAddModal);
+  $('btnOpenSidePanel').addEventListener('click', openSidePanel);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
   // Tabs

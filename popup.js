@@ -23,6 +23,7 @@ let editingId = null;
 let selectedColor = COLORS[0];
 let confirmCallback = null;
 let qlEditMode = false;
+let modalSelectedCat = null;
 
 /* ── Storage ──────────────────────────────────────────────── */
 const store = {
@@ -236,13 +237,27 @@ function makePill (id, name, color, count, active) {
 }
 
 function renderCategorySelect () {
-  const sel = $('snippetCategorySelect');
-  sel.innerHTML = '';
+  const container = $('modalCategoryTabs');
+  if (!container) return;
+  
+  container.innerHTML = '';
   state.categories.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c.id;
-    o.textContent = c.name;
-    sel.appendChild(o);
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab-btn';
+    btn.textContent = c.name;
+    btn.dataset.catId = c.id;
+    
+    if (modalSelectedCat === c.id || (!modalSelectedCat && c.id === (state.categories[0]?.id || 'general'))) {
+      btn.classList.add('active');
+    }
+    
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.cat-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      modalSelectedCat = c.id;
+    });
+    
+    container.appendChild(btn);
   });
 }
 
@@ -398,8 +413,8 @@ function openAddModal () {
   $('modalTitle').textContent = 'Nuevo Snippet';
   $('snippetTitleInput').value = '';
   $('snippetTextInput').value = '';
+  modalSelectedCat = state.categories[0]?.id || 'general';
   renderCategorySelect();
-  $('snippetCategorySelect').value = state.categories[0]?.id || 'general';
   $('modalOverlay').classList.add('active');
   setTimeout(() => $('snippetTitleInput').focus(), 100);
 }
@@ -409,8 +424,8 @@ function openEditModal (snippet) {
   $('modalTitle').textContent = 'Editar Snippet';
   $('snippetTitleInput').value = snippet.title;
   $('snippetTextInput').value = snippet.text;
+  modalSelectedCat = snippet.catId;
   renderCategorySelect();
-  $('snippetCategorySelect').value = snippet.catId;
   $('modalOverlay').classList.add('active');
   setTimeout(() => $('snippetTitleInput').focus(), 100);
 }
@@ -427,7 +442,7 @@ function confirmAction (msg, cb) {
 function saveSnippet () {
   const title = $('snippetTitleInput').value.trim();
   const text = $('snippetTextInput').value.trim();
-  const catId = $('snippetCategorySelect').value;
+  const catId = modalSelectedCat || state.categories[0]?.id || 'general';
 
   if (!title || !text) { toast('Completa título y texto'); return; }
 
