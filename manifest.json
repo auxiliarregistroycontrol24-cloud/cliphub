@@ -10,7 +10,6 @@
     "tabs"
   ],
   "action": {
-    "default_popup": "popup.html",
     "default_title": "QuickCopy"
   },
   "side_panel": {
