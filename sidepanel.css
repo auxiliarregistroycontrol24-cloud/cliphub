@@ -431,7 +431,7 @@ body {
   font-weight: 600;
 }
 
-.cat-pill:hover .pill-del{display:inline-flex;align-items:center;justify-content:center}
+/*.cat-pill:hover .pill-del{display:inline-flex;align-items:center;justify-content:center}*/
 .cat-pill .pill-del:hover{background:var(--danger);color:#fff}
 
 .btn-add-cat {
