@@ -841,10 +841,12 @@ body {
   flex-shrink: 0;
 }
 
+/* FIX: altura máxima ajustada para que el formulario siempre sea visible */
 .category-manager.active {
-  max-height: 500px;
+  max-height: 420px;
 }
 
+/* FIX: inner usa flex column con overflow hidden para contener los hijos */
 .category-manager-inner {
   padding: 8px 14px 12px;
   background: var(--primary-bg);
@@ -852,12 +854,19 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Necesario para que el scroll interno de #catEditList funcione correctamente */
+  overflow: hidden;
+  max-height: 420px;
 }
 
+/* FIX: la lista de categorías tiene scroll propio, limitada en altura */
 #catEditList {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-height: 220px;      /* espacio para ~6-7 categorías */
+  overflow-y: auto;        /* scroll solo en la lista, no en todo el panel */
+  padding-right: 2px;      /* evita que el scrollbar tape el borde del item */
 }
 
 .cat-edit-row {
@@ -950,10 +959,14 @@ body {
   display: none;
 }
 
+/* FIX: flex-shrink: 0 garantiza que el formulario de creación
+        nunca sea aplastado o cortado, independientemente de cuántas
+        categorías haya en la lista de arriba */
 .cat-create-form {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }

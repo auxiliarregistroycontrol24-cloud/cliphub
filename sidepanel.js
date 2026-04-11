@@ -521,19 +521,39 @@ function saveSnippet () {
   toast(editingId ? 'Snippet actualizado' : 'Snippet guardado');
 }
 
-/* ── Category Manager (nuevo) ──────────────────────────────────────── */
+/* ── Category Manager ──────────────────────────────────────── */
 function toggleCatManager () {
   catManagerOpen = !catManagerOpen;
   const el = $('categoryManager');
   if (!el) return;
+
   if (catManagerOpen) {
-    el.classList.add('active');
     renderCatEditList();
     $('catNameInput').value = '';
     selectColor(COLORS[0]);
+
+    // FIX: calcular la altura disponible dinámicamente según el viewport real,
+    // así el panel nunca desborda ni oculta el formulario de creación.
+    const categoriesBar = document.querySelector('.categories-bar');
+    const barBottom = categoriesBar
+      ? categoriesBar.getBoundingClientRect().bottom
+      : 0;
+    const viewportHeight = window.innerHeight;
+    // Reservar ~140px para el formulario de creación + margen inferior
+    const availableHeight = Math.min(420, viewportHeight - barBottom - 16);
+    el.style.maxHeight = availableHeight + 'px';
+
+    const inner = el.querySelector('.category-manager-inner');
+    if (inner) inner.style.maxHeight = availableHeight + 'px';
+
+    el.classList.add('active');
     setTimeout(() => $('catNameInput').focus(), 200);
   } else {
     el.classList.remove('active');
+    // Limpiar estilos inline al cerrar para que la transición CSS funcione bien
+    el.style.maxHeight = '';
+    const inner = el.querySelector('.category-manager-inner');
+    if (inner) inner.style.maxHeight = '';
   }
 }
 
@@ -634,22 +654,6 @@ function saveCategoryForm () {
   $('catNameInput').focus();
   renderCatEditList();
   toast('Categoría creada');
-}
-
-/* ── Side Panel (Solo para el popup) ────────────────────── */
-function openSidePanel () {
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0] && chrome.sidePanel) {
-        chrome.sidePanel.open({ tabId: tabs[0].id }).catch(() => {
-          toast('No se pudo abrir el Side Panel');
-        });
-        window.close();
-      } else {
-        toast('Side Panel no disponible');
-      }
-    });
-  }
 }
 
 /* ── Toast ──────────────────────────────────────────────── */
