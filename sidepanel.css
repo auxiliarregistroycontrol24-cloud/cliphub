@@ -829,3 +829,131 @@ body {
 
 .toast.show{bottom:18px}
 .toast-icon{flex-shrink:0}
+
+/* =======================================
+   CATEGORY MANAGER (modo edición)
+   ======================================= */
+
+.category-manager {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+  flex-shrink: 0;
+}
+
+.category-manager.active {
+  max-height: 500px;
+}
+
+.category-manager-inner {
+  padding: 8px 14px 12px;
+  background: var(--primary-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#catEditList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+
+.cat-edit-row:hover { border-color: var(--border-focus); }
+
+.cat-edit-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cat-edit-name {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  min-width: 0;
+}
+
+.cat-edit-name:focus {
+  background: var(--bg);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+}
+
+.cat-edit-name:disabled {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.btn-cat-save-name {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.btn-cat-save-name:hover { background: var(--primary-dark); }
+
+.btn-cat-del {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.btn-cat-del:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.cat-edit-row.cat-locked .cat-edit-name {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.cat-edit-row.cat-locked .btn-cat-del {
+  display: none;
+}
+
+.cat-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}

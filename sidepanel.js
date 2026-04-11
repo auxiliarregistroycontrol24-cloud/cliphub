@@ -23,6 +23,7 @@ let editingId = null;
 let selectedColor = COLORS[0];
 let confirmCallback = null;
 let qlEditMode = false;
+let catManagerOpen = false;
 
 /* ── Storage ──────────────────────────────────────────────── */
 const store = {
@@ -520,15 +521,87 @@ function saveSnippet () {
   toast(editingId ? 'Snippet actualizado' : 'Snippet guardado');
 }
 
-/* ── Category Form ──────────────────────────────────────── */
-function toggleCatForm () {
-  const form = $('categoryForm');
-  const open = form.classList.toggle('active');
-  if (open) {
+/* ── Category Manager (nuevo) ──────────────────────────────────────── */
+function toggleCatManager () {
+  catManagerOpen = !catManagerOpen;
+  const el = $('categoryManager');
+  if (!el) return;
+  if (catManagerOpen) {
+    el.classList.add('active');
+    renderCatEditList();
     $('catNameInput').value = '';
     selectColor(COLORS[0]);
-    setTimeout(() => $('catNameInput').focus(), 150);
+    setTimeout(() => $('catNameInput').focus(), 200);
+  } else {
+    el.classList.remove('active');
   }
+}
+
+function renderCatEditList () {
+  const list = $('catEditList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  state.categories.forEach(cat => {
+    const isLocked = cat.id === 'general';
+    const row = document.createElement('div');
+    row.className = 'cat-edit-row' + (isLocked ? ' cat-locked' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'cat-edit-dot';
+    dot.style.background = cat.color || COLORS[0];
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'cat-edit-name';
+    input.value = cat.name;
+    input.maxLength = 30;
+    input.disabled = isLocked;
+    if (isLocked) input.title = 'La categoría General no se puede modificar';
+
+    const btnSave = document.createElement('button');
+    btnSave.className = 'btn-cat-save-name';
+    btnSave.title = 'Guardar nombre';
+    btnSave.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-cat-del';
+    btnDel.title = 'Eliminar categoría';
+    btnDel.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+
+    btnSave.addEventListener('click', () => {
+      const newName = input.value.trim();
+      if (!newName) { toast('El nombre no puede estar vacío'); input.focus(); return; }
+      renameCategory(cat.id, newName);
+      input.blur();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { btnSave.click(); }
+      if (e.key === 'Escape') { input.value = cat.name; input.blur(); }
+    });
+
+    btnDel.addEventListener('click', () => {
+      confirmAction(`¿Eliminar categoría <strong>${esc(cat.name)}</strong>?<br>Los snippets pasarán a General.`, () => {
+        deleteCategory(cat.id);
+        renderCatEditList();
+      });
+    });
+
+    row.appendChild(dot);
+    row.appendChild(input);
+    if (!isLocked) row.appendChild(btnSave);
+    row.appendChild(btnDel);
+    list.appendChild(row);
+  });
+}
+
+function renameCategory (id, newName) {
+  const cat = state.categories.find(c => c.id === id);
+  if (cat) { cat.name = newName; }
+  persist();
+  render();
+  toast('Categoría renombrada');
 }
 
 function renderColorPicker () {
@@ -553,9 +626,13 @@ function selectColor (c) {
 
 function saveCategoryForm () {
   const name = $('catNameInput').value.trim();
-  if (!name) return;
+  if (!name) { toast('Escribe un nombre'); return; }
   addCategory(name, selectedColor);
-  toggleCatForm();
+  // Limpiar el formulario sin cerrar el panel
+  $('catNameInput').value = '';
+  selectColor(COLORS[0]);
+  $('catNameInput').focus();
+  renderCatEditList();
   toast('Categoría creada');
 }
 
@@ -599,9 +676,9 @@ function bind () {
   $('qlCancelBtn').addEventListener('click', closeQuickLinksEdit);
 
   // Categories
-  $('btnAddCategory').addEventListener('click', toggleCatForm);
+  if ($('btnEditCategories')) $('btnEditCategories').addEventListener('click', e => { e.stopPropagation(); toggleCatManager(); });
   $('saveCatBtn').addEventListener('click', saveCategoryForm);
-  $('cancelCatBtn').addEventListener('click', toggleCatForm);
+  if ($('cancelCatBtn')) $('cancelCatBtn').addEventListener('click', () => { if (catManagerOpen) toggleCatManager(); });
   $('catNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveCategoryForm(); });
 
   // Snippets
