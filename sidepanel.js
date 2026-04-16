@@ -284,7 +284,7 @@ function renderCategories () {
   el.innerHTML = '';
   el.appendChild(makePill('all', 'Todos', null, state.snippets.length, activeCat === 'all'));
   state.categories.forEach(c => {
-    const count = state.snippets.filter(s => s.catId === c.id).length;
+    const count = state.snippets.filter(s => getCatIds(s).includes(c.id)).length;
     el.appendChild(makePill(c.id, c.name, c.color, count, activeCat === c.id));
   });
 }
@@ -323,15 +323,38 @@ function makePill (id, name, color, count, active) {
   return btn;
 }
 
-function renderCategorySelect () {
-  const sel = $('snippetCategorySelect');
-  sel.innerHTML = '';
+/* Helper: normaliza snippets viejos con catId string al nuevo formato catIds array */
+function getCatIds (snippet) {
+  if (Array.isArray(snippet.catIds) && snippet.catIds.length) return snippet.catIds;
+  if (snippet.catId) return [snippet.catId];
+  return ['general'];
+}
+
+function renderCategoryCheckboxes (selectedIds = []) {
+  const container = $('snippetCategoryCheckboxes');
+  if (!container) return;
+  container.innerHTML = '';
   state.categories.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c.id;
-    o.textContent = c.name;
-    sel.appendChild(o);
+    const label = document.createElement('label');
+    label.className = 'cat-checkbox-item';
+    const checked = selectedIds.includes(c.id);
+    label.innerHTML = `
+      <input type="checkbox" value="${c.id}" ${checked ? 'checked' : ''}>
+      <span class="cat-checkbox-dot" style="background:${c.color}"></span>
+      <span class="cat-checkbox-name">${esc(c.name)}</span>
+    `;
+    container.appendChild(label);
   });
+}
+
+function getSelectedCatIds () {
+  const container = $('snippetCategoryCheckboxes');
+  if (!container) return ['general'];
+  return [...container.querySelectorAll('input[type=checkbox]:checked')].map(el => el.value);
+}
+
+function renderCategorySelect () {
+  // Mantenida por compatibilidad con popup.js — no usada en sidepanel
 }
 
 /* =======================================
@@ -343,7 +366,7 @@ function renderSnippets () {
   list.innerHTML = '';
 
   let items = state.snippets;
-  if (activeCat !== 'all') items = items.filter(s => s.catId === activeCat);
+  if (activeCat !== 'all') items = items.filter(s => getCatIds(s).includes(activeCat));
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     items = items.filter(s =>
@@ -371,15 +394,22 @@ function renderSnippets () {
 }
 
 function makeRow (snippet) {
-  const cat = state.categories.find(c => c.id === snippet.catId);
-  const col = cat?.color || '#6366f1';
+  const catIds = getCatIds(snippet);
+  const cats = catIds.map(id => state.categories.find(c => c.id === id)).filter(Boolean);
+  const col = cats[0]?.color || '#6366f1';
 
   const row = document.createElement('div');
   row.className = 'snippet-row';
   row.dataset.sid = snippet.id;
 
+  // Badges de categorías adicionales (a partir de la 2ª)
+  const extraBadges = cats.slice(1).map(c =>
+    `<span class="row-cat-badge" style="background:${c.color}22;color:${c.color};border-color:${c.color}44">${esc(c.name)}</span>`
+  ).join('');
+
   row.innerHTML = `
     <span class="row-title">${esc(snippet.title)}</span>
+    ${extraBadges ? `<div class="row-cat-badges">${extraBadges}</div>` : ''}
     <div class="row-actions">
       <button class="btn-icon btn-edit" title="Editar">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -445,14 +475,14 @@ async function copyText (text, el) {
 }
 
 /* ── CRUD Snippets ──────────────────────────────────────── */
-function addSnippet (title, text, catId) {
-  state.snippets.unshift({ id: uid(), title, text, catId, ts: Date.now() });
+function addSnippet (title, text, catIds) {
+  state.snippets.unshift({ id: uid(), title, text, catIds, ts: Date.now() });
   persist(); render();
 }
 
-function updateSnippet (id, title, text, catId) {
+function updateSnippet (id, title, text, catIds) {
   const s = state.snippets.find(x => x.id === id);
-  if (s) { s.title = title; s.text = text; s.catId = catId; }
+  if (s) { s.title = title; s.text = text; s.catIds = catIds; delete s.catId; }
   persist(); render();
 }
 
@@ -469,7 +499,11 @@ function addCategory (name, color) {
 
 function deleteCategory (id) {
   if (id === 'general') return;
-  state.snippets.forEach(s => { if (s.catId === id) s.catId = 'general'; });
+  state.snippets.forEach(s => {
+    const ids = getCatIds(s).filter(cid => cid !== id);
+    s.catIds = ids.length ? ids : ['general'];
+    delete s.catId;
+  });
   state.categories = state.categories.filter(c => c.id !== id);
   if (activeCat === id) activeCat = 'all';
   persist(); render();
@@ -481,8 +515,7 @@ function openAddModal () {
   $('modalTitle').textContent = 'Nuevo Snippet';
   $('snippetTitleInput').value = '';
   $('snippetTextInput').value = '';
-  renderCategorySelect();
-  $('snippetCategorySelect').value = state.categories[0]?.id || 'general';
+  renderCategoryCheckboxes([state.categories[0]?.id || 'general']);
   $('modalOverlay').classList.add('active');
   setTimeout(() => $('snippetTitleInput').focus(), 100);
 }
@@ -492,8 +525,7 @@ function openEditModal (snippet) {
   $('modalTitle').textContent = 'Editar Snippet';
   $('snippetTitleInput').value = snippet.title;
   $('snippetTextInput').value = snippet.text;
-  renderCategorySelect();
-  $('snippetCategorySelect').value = snippet.catId;
+  renderCategoryCheckboxes(getCatIds(snippet));
   $('modalOverlay').classList.add('active');
   setTimeout(() => $('snippetTitleInput').focus(), 100);
 }
@@ -510,12 +542,13 @@ function confirmAction (msg, cb) {
 function saveSnippet () {
   const title = $('snippetTitleInput').value.trim();
   const text = $('snippetTextInput').value.trim();
-  const catId = $('snippetCategorySelect').value;
+  const catIds = getSelectedCatIds();
 
   if (!title || !text) { toast('Completa título y texto'); return; }
+  if (!catIds.length) { toast('Selecciona al menos una categoría'); return; }
 
-  if (editingId) updateSnippet(editingId, title, text, catId);
-  else addSnippet(title, text, catId);
+  if (editingId) updateSnippet(editingId, title, text, catIds);
+  else addSnippet(title, text, catIds);
 
   closeModal();
   toast(editingId ? 'Snippet actualizado' : 'Snippet guardado');
