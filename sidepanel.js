@@ -10,11 +10,7 @@ const COLORS = [
 
 let state = {
   categories: [],
-  snippets: [],
-  quickLinks: [
-    { name: '', url: '' },
-    { name: '', url: '' }
-  ]
+  snippets: []
 };
 
 let activeCat = 'all';
@@ -22,7 +18,6 @@ let searchQuery = '';
 let editingId = null;
 let selectedColor = COLORS[0];
 let confirmCallback = null;
-let qlEditMode = false;
 let catManagerOpen = false;
 
 /* ── Storage ──────────────────────────────────────────────── */
@@ -50,10 +45,7 @@ const store = {
 if (typeof chrome !== 'undefined' && chrome.storage) {
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.qc) {
-      state = changes.qc.newValue || state;
-      if (!state.quickLinks) {
-        state.quickLinks = [{ name: '', url: '' }, { name: '', url: '' }];
-      }
+      state = sanitizeState(changes.qc.newValue) || state;
       render();
     }
   });
@@ -63,16 +55,9 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
 document.addEventListener('DOMContentLoaded', async () => {
   const saved = await store.get();
   if (saved) {
-    state = saved;
-    if (!state.quickLinks) {
-      state.quickLinks = [{ name: '', url: '' }, { name: '', url: '' }];
-    }
+    state = sanitizeState(saved);
   } else {
-    state = {
-      categories: [{ id: 'general', name: 'General', color: '#6366f1' }],
-      snippets: [],
-      quickLinks: [{ name: '', url: '' }, { name: '', url: '' }]
-    };
+    state = sanitizeState();
     persist();
   }
   renderColorPicker();
@@ -83,197 +68,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 function persist () { store.set(state); }
 function uid () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 9); }
 function esc (t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+function sanitizeState (saved = {}) {
+  return {
+    categories: saved.categories || [{ id: 'general', name: 'General', color: '#6366f1' }],
+    snippets: saved.snippets || []
+  };
+}
 
 function render () {
   renderCategories();
   renderSnippets();
   renderCategorySelect();
-  renderQuickLinks();
-}
-
-/* =======================================
-   QUICK LINKS
-   ======================================= */
-function renderQuickLinks () {
-  const link1 = state.quickLinks[0] || { name: '', url: '' };
-  const link2 = state.quickLinks[1] || { name: '', url: '' };
-
-  const row1 = $('qlRow1');
-  const row2 = $('qlRow2');
-
-  if (link1.url) {
-    row1.classList.add('has-url');
-    $('qlName1').textContent = link1.name || 'Enlace 1';
-    $('qlUrl1').textContent = truncateUrl(link1.url);
-  } else {
-    row1.classList.remove('has-url');
-    $('qlName1').textContent = 'Sin configurar';
-    $('qlUrl1').textContent = '';
-  }
-
-  if (link2.url) {
-    row2.classList.add('has-url');
-    $('qlName2').textContent = link2.name || 'Enlace 2';
-    $('qlUrl2').textContent = truncateUrl(link2.url);
-  } else {
-    row2.classList.remove('has-url');
-    $('qlName2').textContent = 'Sin configurar';
-    $('qlUrl2').textContent = '';
-  }
-}
-
-function truncateUrl (url) {
-  try {
-    const u = new URL(url);
-    let display = u.hostname + u.pathname;
-    if (display.length > 40) display = display.substring(0, 40) + '…';
-    return display;
-  } catch {
-    return url.length > 40 ? url.substring(0, 40) + '…' : url;
-  }
-}
-
-function openQuickLinksEdit () {
-  qlEditMode = true;
-  const link1 = state.quickLinks[0] || { name: '', url: '' };
-  const link2 = state.quickLinks[1] || { name: '', url: '' };
-
-  $('qlEditName1').value = link1.name || '';
-  $('qlEditUrl1').value = link1.url || '';
-  $('qlEditName2').value = link2.name || '';
-  $('qlEditUrl2').value = link2.url || '';
-
-  $('qlView').style.display = 'none';
-  $('qlEdit').style.display = 'flex';
-}
-
-function closeQuickLinksEdit () {
-  qlEditMode = false;
-  $('qlView').style.display = 'flex';
-  $('qlEdit').style.display = 'none';
-}
-
-function saveQuickLinks () {
-  state.quickLinks = [
-    {
-      name: $('qlEditName1').value.trim(),
-      url: normalizeUrl($('qlEditUrl1').value.trim())
-    },
-    {
-      name: $('qlEditName2').value.trim(),
-      url: normalizeUrl($('qlEditUrl2').value.trim())
-    }
-  ];
-  persist();
-  closeQuickLinksEdit();
-  renderQuickLinks();
-  toast('Enlaces guardados');
-}
-
-function normalizeUrl (url) {
-  if (!url) return '';
-  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  return url;
-}
-
-function openQuickLinks () {
-  const urls = state.quickLinks
-    .map(l => l.url)
-    .filter(u => u && u.length > 0);
-
-  if (urls.length === 0) {
-    toast('No hay enlaces configurados');
-    return;
-  }
-
-  if (typeof chrome !== 'undefined' && chrome.tabs) {
-    urls.forEach(url => {
-      chrome.tabs.create({ url, active: false });
-    });
-    toast(`${urls.length} enlace${urls.length > 1 ? 's' : ''} abierto${urls.length > 1 ? 's' : ''}`);
-  } else {
-    urls.forEach(url => window.open(url, '_blank'));
-    toast('Enlaces abiertos');
-  }
-}
-
-function toggleQuickLinksCollapse (e) {
-  if (e.target.closest('.quicklinks-header-actions')) return;
-  $('quicklinksSection').classList.toggle('collapsed');
-}
-
-/* =======================================
-   AUTOMATIZACIÓN (BATCH CLICK)
-   ======================================= */
-function initAutomate() {
-  $('automateToggle').addEventListener('click', () => {
-    $('automateSection').classList.toggle('collapsed');
-  });
-  
-  $('btnStartAuto').addEventListener('click', async () => {
-      const text = $('autoText').value.trim();
-      const selector = $('autoSelector').value.trim();
-      const batchSize = parseInt($('autoBatchSize').value) || 15;
-      const autoStatus = $('autoStatus');
-
-      if (!text || !selector) {
-          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Completa todos los campos.</span>";
-          return;
-      }
-
-      if (typeof chrome === 'undefined' || !chrome.tabs) return;
-
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ No hay pestaña activa.</span>";
-          return;
-      }
-
-      autoStatus.innerText = "⏳ Buscando elementos...";
-      
-      try {
-          chrome.tabs.sendMessage(tab.id, {
-              action: "RUN_BATCH_CLICK",
-              text,
-              selector,
-              batchSize
-          }, (response) => {
-             if (chrome.runtime.lastError) {
-                autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
-             }
-          });
-      } catch (e) {
-          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
-      }
-  });
-
-  $('btnResetAuto').addEventListener('click', async () => {
-      if (typeof chrome === 'undefined' || !chrome.tabs) return;
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) return;
-      
-      const autoStatus = $('autoStatus');
-      try {
-          chrome.tabs.sendMessage(tab.id, { action: "RESET_BATCH" }, () => {
-             if (chrome.runtime.lastError) {
-                autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error: Recarga la página.</span>";
-             } else {
-                autoStatus.innerText = "🔄 Progreso reiniciado.";
-             }
-          });
-      } catch (e) {
-          autoStatus.innerHTML = "<span style='color:var(--danger)'>❌ Error al reiniciar.</span>";
-      }
-  });
-
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.onMessage.addListener((request) => {
-          if (request.action === "BATCH_PROGRESS") {
-              const { total, processed } = request;
-              $('autoStatus').innerText = `✅ Encontrados: ${total} | Procesados: ${processed}`;
-          }
-      });
-  }
 }
 
 /* =======================================
@@ -402,14 +207,8 @@ function makeRow (snippet) {
   row.className = 'snippet-row';
   row.dataset.sid = snippet.id;
 
-  // Badges de categorías adicionales (a partir de la 2ª)
-  const extraBadges = cats.slice(1).map(c =>
-    `<span class="row-cat-badge" style="background:${c.color}22;color:${c.color};border-color:${c.color}44">${esc(c.name)}</span>`
-  ).join('');
-
   row.innerHTML = `
     <span class="row-title">${esc(snippet.title)}</span>
-    ${extraBadges ? `<div class="row-cat-badges">${extraBadges}</div>` : ''}
     <div class="row-actions">
       <button class="btn-icon btn-edit" title="Editar">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -705,12 +504,6 @@ function bind () {
   if ($('btnOpenSidePanel')) $('btnOpenSidePanel').addEventListener('click', openSidePanel);
   $('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderSnippets(); });
 
-  // Quick Links
-  $('quicklinksToggle').addEventListener('click', toggleQuickLinksCollapse);
-  $('btnEditLinks').addEventListener('click', e => { e.stopPropagation(); openQuickLinksEdit(); });
-  $('btnOpenLinks').addEventListener('click', e => { e.stopPropagation(); openQuickLinks(); });
-  $('qlSaveBtn').addEventListener('click', saveQuickLinks);
-  $('qlCancelBtn').addEventListener('click', closeQuickLinksEdit);
 
   // Categories
   if ($('btnEditCategories')) $('btnEditCategories').addEventListener('click', e => { e.stopPropagation(); toggleCatManager(); });
@@ -733,8 +526,6 @@ function bind () {
     if (e.key === 'Escape') { closeModal(); closeConfirm(); }
   });
 
-  // Automate UI logic
-  initAutomate();
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */

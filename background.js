@@ -5,7 +5,6 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  // Manejador del panel lateral
   if (msg.action === 'openSidePanel') {
     if (chrome.sidePanel) {
       chrome.sidePanel.open({ windowId: sender.tab?.windowId })
@@ -21,23 +20,5 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
       return true;
     }
-  }
-
-  // Manejador de Quick Links
-  if (msg.action === 'openLinks') {
-    const urls = msg.urls || [];
-    urls.forEach(url => {
-      if (url) chrome.tabs.create({ url, active: false });
-    });
-    sendResponse({ ok: true });
-    return true;
-  }
-
-  // NUEVO: Manejador para Automatización (Batch click de enlaces)
-  if (msg.action === "OPEN_BACKGROUND_TAB") {
-    chrome.tabs.create({ url: msg.url, active: false }, (tab) => {
-      sendResponse({ status: "tab_opened", tabId: tab.id });
-    });
-    return true; 
   }
 });
